@@ -1,6 +1,8 @@
 # mcp-doctor
 
+[![npm](https://img.shields.io/npm/v/%40tracepoint%2Fmcp-doctor?logo=npm&color=cb3837)](https://www.npmjs.com/package/@tracepoint/mcp-doctor)
 [![CI](https://github.com/Shinu-Cherian/MCP-Doctor/actions/workflows/ci.yml/badge.svg)](https://github.com/Shinu-Cherian/MCP-Doctor/actions/workflows/ci.yml)
+[![node](https://img.shields.io/node/v/%40tracepoint%2Fmcp-doctor)](https://nodejs.org)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 **Find out what your AI can actually reach.**
@@ -379,12 +381,19 @@ to test.
 ## Development
 
 ```bash
+git clone https://github.com/Shinu-Cherian/MCP-Doctor.git
+cd MCP-Doctor
 npm install
+
 npm run typecheck    # src, tests and fixtures
 npm test             # 91 unit tests
 npm run build        # compile to dist/
 npm run selftest     # audit ourselves; must stay at zero findings
 ```
+
+The repository is named `MCP-Doctor`; the package is published under the
+`@tracepoint` scope because the unscoped name was already in use. The scope is
+a publisher, not a rename.
 
 Every rule has tests for both the case it should fire on **and** the case it
 should stay quiet on. A scanner that flags everything is as useless as one that

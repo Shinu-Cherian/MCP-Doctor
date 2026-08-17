@@ -1,0 +1,10 @@
+{
+  // VS Code allows comments and trailing commas in mcp.json.
+  // A scanner using plain JSON.parse throws here and silently sees nothing.
+  "servers": {
+    "sentry": {
+      "type": "http",
+      "url": "https://mcp.sentry.dev/mcp",
+    },
+  },
+}

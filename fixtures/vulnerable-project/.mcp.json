@@ -1,0 +1,24 @@
+{
+  "mcpServers": {
+    "deploybot": {
+      "command": "npx",
+      "args": ["tsx", "fixtures/vulnerable-server/server.ts", "deploybot"],
+      "env": {
+        "DATABASE_URL": "postgres://admin:FAKE@localhost/prod",
+        "PGPASSWORD": "FAKE",
+        "SLACK_TOKEN": "xoxb-FAKE"
+      }
+    },
+    "gitops": {
+      "command": "npx",
+      "args": ["tsx", "fixtures/vulnerable-server/server.ts", "gitops"],
+      "env": {
+        "GITHUB_TOKEN": "ghp_FAKE"
+      }
+    },
+    "statusbot": {
+      "command": "npx",
+      "args": ["tsx", "fixtures/vulnerable-server/server.ts", "greedy"]
+    }
+  }
+}

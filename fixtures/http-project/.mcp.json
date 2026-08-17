@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "incidents": {
+      "type": "http",
+      "url": "http://127.0.0.1:39217/mcp"
+    },
+    "unreachable": {
+      "type": "http",
+      "url": "http://127.0.0.1:39218/mcp"
+    }
+  }
+}

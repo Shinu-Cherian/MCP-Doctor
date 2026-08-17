@@ -7,7 +7,7 @@
  *
  * Reached through `mcp-doctor serve` rather than a second binary. npx resolves
  * a package to its bin by name, and with two bins it cannot choose, so
- * `npx @mcp-doctor/cli audit` would fail outright. One binary, subcommands
+ * `npx @tracepoint/mcp-doctor audit` would fail outright. One binary, subcommands
  * underneath it.
  *
  * The tool definitions below are written to pass mcp-doctor's own rules:

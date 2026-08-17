@@ -1,5 +1,5 @@
 {
-  "name": "@mcp-doctor/cli",
+  "name": "@tracepoint/mcp-doctor",
   "version": "0.1.0",
   "description": "Security auditor for MCP servers. Finds tool descriptions carrying hidden instructions, annotations that contradict their own schema, over-shared credentials, and pairs of tools that together form a path off your machine. Runs entirely offline.",
   "keywords": [

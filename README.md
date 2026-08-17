@@ -13,7 +13,7 @@ Everything runs locally. No API key, no account, no network calls unless you ask
 for them.
 
 ```bash
-npx @mcp-doctor/cli audit
+npx @tracepoint/mcp-doctor audit
 ```
 
 ---
@@ -60,13 +60,13 @@ Nothing to install — `npx` fetches and runs it:
 ```bash
 # 1. What is declared, and where? Reads config files only.
 #    Nothing is executed, nothing is contacted.
-npx @mcp-doctor/cli discover
+npx @tracepoint/mcp-doctor discover
 
 # 2. Connect to each server and read its tools, resources and prompts.
-npx @mcp-doctor/cli scan --spawn
+npx @tracepoint/mcp-doctor scan --spawn
 
 # 3. Everything: scan, apply all rules, check for drift, estimate token cost.
-npx @mcp-doctor/cli audit --spawn
+npx @tracepoint/mcp-doctor audit --spawn
 ```
 
 To work on it instead, clone and run from source — see
@@ -235,7 +235,7 @@ permissions in the middle of a conversation.
   "mcpServers": {
     "mcp-doctor": {
       "command": "npx",
-      "args": ["-y", "@mcp-doctor/cli", "serve"]
+      "args": ["-y", "@tracepoint/mcp-doctor", "serve"]
     }
   }
 }

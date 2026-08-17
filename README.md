@@ -331,14 +331,11 @@ reported zero servers while the session had roughly seventy-eight tools live.
 `mcp-doctor` warns that an empty result is not proof of absence, but it does not
 yet enumerate the live set. This is the next thing to build.
 
-**Only tested on Windows.** Path handling for macOS and Linux is implemented but
-has not been run there.
-
 **No model in the analysis path.** All thirty rules are deterministic, which is
 a deliberate choice rather than a missing feature: the same input always
 produces the same findings, and nothing has to be trusted to judge severity.
 
-**No CI.** The test suite exists and passes; nothing runs it automatically yet.
+**Not published to npm.** For now, clone and run from source.
 
 ---
 
@@ -390,8 +387,12 @@ Every rule has tests for both the case it should fire on **and** the case it
 should stay quiet on. A scanner that flags everything is as useless as one that
 flags nothing.
 
-Two regressions are pinned by name in the suite, because both were real and both
-were invisible:
+CI runs the whole sequence — typecheck, tests, build, self-audit — on **Linux,
+macOS and Windows** against **Node 20 and 22**, on every push. `fail-fast` is
+off, so one platform breaking still reports the other five.
+
+Three regressions are pinned by name in the suite, because all three were real
+and all three were invisible until something forced them into the open:
 
 - **snake_case verb matching.** `\b` treats `_` as a word character, so
   `/\bdelete\b/` never matched `delete_branch`. Since snake_case is the dominant
@@ -399,6 +400,10 @@ were invisible:
 - **UTF-8 BOM.** Notepad and PowerShell's `Out-File -Encoding utf8` prepend three
   invisible bytes. The parser failed at offset 0 and a perfectly valid config was
   reported as zero servers, with no error shown.
+- **Shell-dependent test discovery.** `tsx --test test/*.test.ts` relied on the
+  shell expanding the glob. POSIX shells do; cmd.exe does not; Node only learned
+  to expand it itself in 22. Exactly one cell of the matrix — Windows on Node 20 —
+  ever saw the bug, and it surfaced on the first CI run.
 
 ---
 

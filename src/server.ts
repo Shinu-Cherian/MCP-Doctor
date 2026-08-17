@@ -27,6 +27,7 @@ import { computeCost } from "./cost.js";
 import { discover } from "./discover.js";
 import { LOCKFILE_NAME, buildLockfile, diffAgainstLock, readLockfile, writeLockfile } from "./lockfile.js";
 import { countBySeverity, runRules } from "./rules/index.js";
+import { IMPLEMENTATION } from "./version.js";
 import { scanAll } from "./scan.js";
 import type { Finding } from "./types.js";
 
@@ -137,7 +138,7 @@ async function collect(directory: string | undefined, live: boolean) {
 
 function createServer(): Server {
   const server = new Server(
-    { name: "mcp-doctor", version: "0.1.0" },
+    IMPLEMENTATION,
     { capabilities: { tools: {} } },
   );
 

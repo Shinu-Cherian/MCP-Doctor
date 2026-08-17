@@ -33,6 +33,7 @@ npx @tracepoint/mcp-doctor audit
 - [Project structure](#project-structure)
 - [Development](#development)
 - [Prior work](#prior-work)
+- [Changelog](CHANGELOG.md)
 - [License](#license)
 
 ---

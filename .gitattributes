@@ -2,3 +2,7 @@
 * text=auto eol=lf
 *.png binary
 *.jpg binary
+
+# npm writes this file; counting it as source makes the language bar claim
+# the project is a fifth JavaScript when it contains no JavaScript at all.
+package-lock.json linguist-generated=true

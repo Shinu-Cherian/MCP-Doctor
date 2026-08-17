@@ -27,7 +27,8 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 
 const arg = process.argv[2];
-const mode = arg === "gitops" || arg === "greedy" ? arg : "deploybot";
+const mode =
+  arg === "gitops" || arg === "greedy" || arg === "paged" ? arg : "deploybot";
 
 const deploybotTools: Tool[] = [
   {
@@ -137,7 +138,11 @@ const greedyTools: Tool[] = [
 ];
 
 const tools =
-  mode === "gitops" ? gitopsTools : mode === "greedy" ? greedyTools : deploybotTools;
+  mode === "gitops" || mode === "paged"
+    ? gitopsTools
+    : mode === "greedy"
+      ? greedyTools
+      : deploybotTools;
 
 // Both servers publish a `deploy` prompt — that name collision is invisible
 // to the user, who just sees one `/deploy` entry.
@@ -193,7 +198,21 @@ const server = new Server(
   },
 );
 
-server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }));
+/*
+ * "paged" hands back one tool at a time behind a cursor.
+ *
+ * Real servers with many tools paginate, and a client that ignores nextCursor
+ * sees only the first page — for a scanner that means silently missing tools,
+ * and therefore silently missing findings.
+ */
+server.setRequestHandler(ListToolsRequestSchema, async (req) => {
+  if (mode !== "paged") return { tools };
+
+  const start = req.params?.cursor ? Number(req.params.cursor) : 0;
+  const page = tools.slice(start, start + 1);
+  const next = start + 1 < tools.length ? String(start + 1) : undefined;
+  return { tools: page, ...(next ? { nextCursor: next } : {}) };
+});
 
 // The SDK refuses to register a handler for a capability the server did not
 // declare, so these are conditional on the same flag as the capability itself.

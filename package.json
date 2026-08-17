@@ -10,7 +10,7 @@
   "scripts": {
     "build": "tsc",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json",
-    "test": "tsx --test test/*.test.ts",
+    "test": "node scripts/run-tests.mjs",
     "dev": "tsx src/index.ts",
     "audit": "tsx src/index.ts audit",
     "serve": "tsx src/server.ts",

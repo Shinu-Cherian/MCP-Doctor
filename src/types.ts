@@ -179,6 +179,47 @@ export interface ScanResult {
   scannedAt: string;
   discovery: DiscoveryResult;
   servers: ServerScan[];
+  /** What was actually running, when the check was performed. */
+  live?: LiveResult;
+}
+
+/* ------------------------------------------------------------------ *
+ * Live processes: what is actually running, as opposed to declared.
+ * ------------------------------------------------------------------ */
+
+/** One row from the operating system's process table. */
+export interface RunningProcess {
+  pid: number;
+  ppid: number;
+  /** Full command line, when the OS will give us one. */
+  command: string;
+}
+
+/**
+ * A process that looks like an MCP server currently running on this machine.
+ *
+ * Config files are a statement of intent. This is what is actually there —
+ * and the two are not always the same, which is the entire point of the check.
+ */
+export interface LiveServer {
+  pid: number;
+  command: string;
+  /** Client application that spawned it, if the ancestry says so. */
+  client?: string;
+  /** Name of the matching entry in a config file, when one matches. */
+  declaredAs?: string;
+  /** Why we concluded this is an MCP server. */
+  reason: string;
+}
+
+export interface LiveResult {
+  /** False when the platform gave us nothing usable. */
+  supported: boolean;
+  /** Total processes examined, for context in the report. */
+  examined: number;
+  servers: LiveServer[];
+  /** Why enumeration failed or was partial. */
+  note?: string;
 }
 
 /* ------------------------------------------------------------------ *

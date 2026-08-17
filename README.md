@@ -85,6 +85,7 @@ VS Code and Windsurf**, plus any project directory you pass as an argument.
 | `--spawn` | Start local stdio servers so their tools can be read. |
 | `--network` | Contact remote HTTP servers. |
 | `--forward-env` | Pass your real environment to spawned servers. Off by default. |
+| `--no-live` | Skip the process-table check. |
 | `--lock` | Write `mcp-doctor.lock.json`, recording the current state as approved. |
 | `--json` | Machine-readable output. |
 | `--markdown FILE` | Write a shareable report. |
@@ -96,8 +97,8 @@ so it works in CI without a wrapper script.
 
 ## What it checks
 
-Thirty rules across five areas. All of them are deterministic: given the same
-input they produce the same output, with no model involved.
+Thirty-three rules across six areas. All of them are deterministic: given the
+same input they produce the same output, with no model involved.
 
 ### Configuration
 
@@ -152,6 +153,28 @@ per-server scan cannot find them.
 | `tool-shadowing` | Two servers defining the same tool name; the better-worded one wins |
 | `exfiltration-path` | A file reader on one server and a network sender on another |
 | `cross-server-reference` | One server's description giving the model instructions about another's tools |
+
+### Running vs declared
+
+Configuration is a record of intent. Servers also arrive as extensions,
+connectors and bundled features that never touch `mcpServers`, so a scanner
+that reads configuration alone can report "0 servers, no risks" on a machine
+running three of them — a confident wrong answer to the question the user
+actually asked.
+
+Every stdio MCP server is a child process of the client that launched it, so
+the operating system knows about it whichever application started it and
+wherever that application keeps its settings. That makes the process table the
+one source that works the same for Claude, Cursor, VS Code and Windsurf.
+
+| Rule | Catches |
+| --- | --- |
+| `undeclared-server` | A running MCP server that no config file accounts for |
+| `live-check-unavailable` | The process table could not be read — coverage is incomplete, and says so |
+| `live-matches-declared` | Informational: everything running is accounted for |
+
+Reading the process table executes nothing and contacts nobody, so it runs by
+default. Disable with `--no-live`.
 
 ### Over time
 
@@ -254,10 +277,11 @@ parameters, honest annotations, descriptions that state behaviour rather than
 argue for their own selection.
 
 ```bash
-npm run selftest    # mcp-doctor audits mcp-doctor — reports zero findings
+npm run selftest    # mcp-doctor audits mcp-doctor — nothing above informational
 ```
 
-That number staying at zero is part of the test suite's job.
+Keeping that clean is part of the test suite's job: if a rule ever fires on
+our own tool definitions, the build should say so.
 
 ---
 
@@ -331,14 +355,7 @@ require OAuth, and `mcp-doctor` has no way to authenticate. Against those,
 analysed — transport, secrets, supply chain — so the config rules apply either
 way.
 
-**Live surface is not compared against declared surface.** Modern clients
-register servers through connectors, plugins and built-in extensions that never
-appear in `mcpServers`. On the machine this was developed on, every config file
-reported zero servers while the session had roughly seventy-eight tools live.
-`mcp-doctor` warns that an empty result is not proof of absence, but it does not
-yet enumerate the live set. This is the next thing to build.
-
-**No model in the analysis path.** All thirty rules are deterministic, which is
+**No model in the analysis path.** All thirty-three rules are deterministic, which is
 a deliberate choice rather than a missing feature: the same input always
 produces the same findings, and nothing has to be trusted to judge severity.
 
@@ -351,12 +368,14 @@ src/
   types.ts            every shared data shape, and the no-secrets rule
   discover.ts         find and normalise config files across five clients
   scan.ts             MCP client: handshake, list tools/resources/prompts
+  live.ts             read the OS process table, cross-platform
   rules/
     markers.ts          shared lexicons for injection and promotional prose
     config.ts           secrets, supply chain, transport
     tools.ts            annotation lies, poisoning, unbounded parameters
     resources.ts        sensitive URIs, type confusion, unbounded templates
     cross.ts            collisions, shadowing, exfiltration paths
+    live.ts             running servers that no config declares
     index.ts            rule runner; the only place severity is decided
   lockfile.ts         hash definitions, detect drift
   cost.ts             token overhead estimation
@@ -388,7 +407,7 @@ npm install
 npm run typecheck    # src, tests and fixtures
 npm test             # 91 unit tests
 npm run build        # compile to dist/
-npm run selftest     # audit ourselves; must stay at zero findings
+npm run selftest     # audit ourselves; nothing above informational
 ```
 
 The repository is named `MCP-Doctor`; the package is published under the

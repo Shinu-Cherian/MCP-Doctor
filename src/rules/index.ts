@@ -10,6 +10,7 @@
 import { SEVERITY_ORDER, type Finding, type ScanResult } from "../types.js";
 import { configRules } from "./config.js";
 import { crossRules } from "./cross.js";
+import { liveRules } from "./live.js";
 import { resourceRules } from "./resources.js";
 import { toolRules } from "./tools.js";
 
@@ -37,6 +38,8 @@ export function runRules(result: ScanResult): Finding[] {
   for (const declared of result.discovery.servers) {
     findings.push(...configRules(declared));
   }
+
+  findings.push(...liveRules(result));
 
   for (const scan of result.servers) {
     if (scan.status !== "ok") continue;

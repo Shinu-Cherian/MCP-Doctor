@@ -189,6 +189,7 @@ async function main(): Promise<void> {
   }
 
   const result = await scanAll(discovery, {
+    checkLive: !flags.includes("--no-live"),
     allowSpawn: flags.includes("--spawn"),
     allowNetwork: flags.includes("--network"),
     forwardEnv: flags.includes("--forward-env"),

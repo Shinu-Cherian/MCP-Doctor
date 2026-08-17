@@ -67,8 +67,10 @@ export function renderTerminal(
   const skipped = result.servers.filter((s) => s.status !== "ok");
   const toolTotal = scanned.reduce((n, s) => n + s.tools.length, 0);
 
+  const liveCount = result.live?.supported ? result.live.servers.length : undefined;
   out.push(
     `  ${result.discovery.servers.length} declared · ${scanned.length} scanned · ` +
+      (liveCount === undefined ? "" : `${liveCount} running · `) +
       `${toolTotal} tools · ${findings.length} findings`,
   );
 

@@ -18,6 +18,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+import { findLiveServers } from "./live.js";
 import {
   CreateMessageRequestSchema,
   ElicitRequestSchema,
@@ -36,6 +37,8 @@ import type {
 } from "./types.js";
 
 export interface ScanOptions {
+  /** Compare the process table against the config. Read-only; on by default. */
+  checkLive?: boolean;
   /** Run local stdio servers. Off by default — see rule 1 above. */
   allowSpawn?: boolean;
   /** Contact remote HTTP servers. Off by default: it reveals you to them. */
@@ -47,6 +50,7 @@ export interface ScanOptions {
 }
 
 const DEFAULTS: Required<ScanOptions> = {
+  checkLive: true,
   allowSpawn: false,
   allowNetwork: false,
   forwardEnv: false,
@@ -341,11 +345,21 @@ export async function scanAll(
   discovery: DiscoveryResult,
   options: ScanOptions = {},
 ): Promise<ScanResult> {
+  const opts = { ...DEFAULTS, ...options };
+
+  // Snapshot the process table *before* scanning. With --spawn we start servers
+  // ourselves, and npx-style launchers leave orphans whose parent pid no longer
+  // resolves — so afterwards our own children can look like someone else's.
+  // Reading the table executes nothing and contacts nobody, so it runs by
+  // default; unlike --spawn and --network it costs the user nothing.
+  const live = opts.checkLive ? findLiveServers(discovery.servers) : undefined;
+
   const servers: ServerScan[] = [];
   // Sequential on purpose: parallel spawning of unknown binaries is exactly
   // the kind of thing this tool exists to warn people about.
   for (const declared of discovery.servers) {
     servers.push(await scanServer(declared, options));
   }
-  return { scannedAt: new Date().toISOString(), discovery, servers };
+
+  return { scannedAt: new Date().toISOString(), discovery, servers, live };
 }

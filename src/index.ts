@@ -160,13 +160,21 @@ async function main(): Promise<void> {
     .slice(1)
     .filter((a, i) => !a.startsWith("--") && i + 1 !== mdValueIndex);
 
+  // Serving speaks MCP on stdout, so it must not share it with a report.
+  if (command === "serve") {
+    const { startServer } = await import("./server.js");
+    await startServer();
+    return;
+  }
+
   if (command !== "discover" && command !== "scan" && command !== "audit") {
     console.error(
       `unknown command: ${command}\n` +
         `usage:\n` +
         `  mcp-doctor discover [--json] [dir...]\n` +
         `  mcp-doctor scan    [--json] [--spawn] [--network] [--forward-env] [dir...]\n` +
-        `  mcp-doctor audit   [--json] [--markdown FILE] [--spawn] [--network] [dir...]`,
+        `  mcp-doctor audit   [--json] [--markdown FILE] [--spawn] [--network] [dir...]\n` +
+        `  mcp-doctor serve   run as an MCP server over stdio`,
     );
     process.exit(1);
   }

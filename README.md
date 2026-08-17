@@ -13,7 +13,7 @@ Everything runs locally. No API key, no account, no network calls unless you ask
 for them.
 
 ```bash
-npx tsx src/index.ts audit
+npx @mcp-doctor/cli audit
 ```
 
 ---
@@ -55,25 +55,22 @@ would not have agreed to.
 
 ## Quick start
 
-```bash
-git clone <this repo>
-cd mcp-doctor
-npm install
-```
-
-Three commands, in increasing order of how much they touch:
+Nothing to install — `npx` fetches and runs it:
 
 ```bash
 # 1. What is declared, and where? Reads config files only.
 #    Nothing is executed, nothing is contacted.
-npx tsx src/index.ts discover
+npx @mcp-doctor/cli discover
 
 # 2. Connect to each server and read its tools, resources and prompts.
-npx tsx src/index.ts scan --spawn
+npx @mcp-doctor/cli scan --spawn
 
 # 3. Everything: scan, apply all rules, check for drift, estimate token cost.
-npx tsx src/index.ts audit --spawn
+npx @mcp-doctor/cli audit --spawn
 ```
+
+To work on it instead, clone and run from source — see
+[Development](#development).
 
 Config files are found automatically for **Claude Desktop, Claude Code, Cursor,
 VS Code and Windsurf**, plus any project directory you pass as an argument.
@@ -238,7 +235,7 @@ permissions in the middle of a conversation.
   "mcpServers": {
     "mcp-doctor": {
       "command": "npx",
-      "args": ["tsx@4.19.2", "/absolute/path/to/mcp-doctor/src/server.ts"]
+      "args": ["-y", "@mcp-doctor/cli", "serve"]
     }
   }
 }
@@ -263,6 +260,14 @@ That number staying at zero is part of the test suite's job.
 ---
 
 ## Try the demo
+
+The fixtures ship with the repository rather than the npm package, so the demos
+below run from a clone:
+
+```bash
+git clone https://github.com/Shinu-Cherian/MCP-Doctor.git
+cd MCP-Doctor && npm install
+```
 
 `fixtures/vulnerable-server` is a deliberately unsafe MCP server. Nothing it
 does is harmful — every handler just returns text — but its *metadata* carries
@@ -334,8 +339,6 @@ yet enumerate the live set. This is the next thing to build.
 **No model in the analysis path.** All thirty rules are deterministic, which is
 a deliberate choice rather than a missing feature: the same input always
 produces the same findings, and nothing has to be trusted to judge severity.
-
-**Not published to npm.** For now, clone and run from source.
 
 ---
 

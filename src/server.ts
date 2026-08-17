@@ -1,10 +1,14 @@
-#!/usr/bin/env node
 /**
  * mcp-doctor's other face: an MCP server.
  *
  * Everything above this file makes mcp-doctor a *client* that inspects other
  * servers. This file lets an assistant ask the question directly — "what did I
  * just get access to?" — mid-conversation, without leaving the session.
+ *
+ * Reached through `mcp-doctor serve` rather than a second binary. npx resolves
+ * a package to its bin by name, and with two bins it cannot choose, so
+ * `npx @mcp-doctor/cli audit` would fail outright. One binary, subcommands
+ * underneath it.
  *
  * The tool definitions below are written to pass mcp-doctor's own rules:
  * bounded parameters, honest annotations, descriptions that state behaviour
@@ -131,101 +135,110 @@ async function collect(directory: string | undefined, live: boolean) {
   return { dir, scan, findings: runRules(scan), cost: computeCost(scan) };
 }
 
-const server = new Server(
-  { name: "mcp-doctor", version: "0.1.0" },
-  { capabilities: { tools: {} } },
-);
+function createServer(): Server {
+  const server = new Server(
+    { name: "mcp-doctor", version: "0.1.0" },
+    { capabilities: { tools: {} } },
+  );
 
-server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }));
+  server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }));
 
-server.setRequestHandler(CallToolRequestSchema, async (req) => {
-  const args = (req.params.arguments ?? {}) as Record<string, unknown>;
-  const directory = typeof args.directory === "string" ? args.directory : undefined;
+  server.setRequestHandler(CallToolRequestSchema, async (req) => {
+    const args = (req.params.arguments ?? {}) as Record<string, unknown>;
+    const directory = typeof args.directory === "string" ? args.directory : undefined;
 
-  try {
-    switch (req.params.name) {
-      case "audit_mcp_servers": {
-        const live = args.live === true;
-        const { scan, findings, cost } = await collect(directory, live);
-        const text =
-          `# MCP audit\n\n` +
-          `${scan.discovery.servers.length} declared server(s), ` +
-          `${scan.servers.filter((s) => s.status === "ok").length} scanned, ` +
-          `${cost.totalTokens} estimated tokens of tool definitions.\n\n` +
-          (live
-            ? ""
-            : "_Configuration-only scan. Pass live: true to read each server's tools._\n\n") +
-          formatFindings(findings);
-        return { content: [{ type: "text", text }] };
-      }
-
-      case "explain_blast_radius": {
-        const { scan, findings, cost } = await collect(directory, true);
-        const chains = findings.filter((f) => f.rule === "exfiltration-path");
-        const secrets = scan.discovery.servers.flatMap((s) =>
-          s.envKeys.map((k) => `${s.name}: ${k}`),
-        );
-        const openWorld = scan.servers.flatMap((s) =>
-          s.tools.filter((t) => t.annotations?.openWorldHint === true).map((t) => `${s.name}.${t.name}`),
-        );
-
-        const text =
-          `# Blast radius\n\n` +
-          `## Credentials held by servers\n` +
-          (secrets.length ? secrets.map((s) => `- ${s}`).join("\n") : "- none declared") +
-          `\n\n## Tools that reach the network\n` +
-          (openWorld.length ? openWorld.map((s) => `- ${s}`).join("\n") : "- none") +
-          `\n\n## Paths from local data to an external destination\n` +
-          (chains.length
-            ? chains.map((c) => `- ${c.evidence ?? c.title}`).join("\n")
-            : "- none found") +
-          `\n\n## Context overhead\n- ${cost.totalTokens} estimated tokens per request\n`;
-        return { content: [{ type: "text", text }] };
-      }
-
-      case "check_drift": {
-        const { dir, scan } = await collect(directory, true);
-        const lockPath = join(dir, LOCKFILE_NAME);
-
-        if (args.update === true) {
-          writeLockfile(lockPath, buildLockfile(scan));
-          return {
-            content: [{ type: "text", text: `Lockfile updated: ${lockPath}` }],
-          };
+    try {
+      switch (req.params.name) {
+        case "audit_mcp_servers": {
+          const live = args.live === true;
+          const { scan, findings, cost } = await collect(directory, live);
+          const text =
+            `# MCP audit\n\n` +
+            `${scan.discovery.servers.length} declared server(s), ` +
+            `${scan.servers.filter((s) => s.status === "ok").length} scanned, ` +
+            `${cost.totalTokens} estimated tokens of tool definitions.\n\n` +
+            (live
+              ? ""
+              : "_Configuration-only scan. Pass live: true to read each server's tools._\n\n") +
+            formatFindings(findings);
+          return { content: [{ type: "text", text }] };
         }
 
-        const previous = readLockfile(lockPath);
-        if (!previous) {
+        case "explain_blast_radius": {
+          const { scan, findings, cost } = await collect(directory, true);
+          const chains = findings.filter((f) => f.rule === "exfiltration-path");
+          const secrets = scan.discovery.servers.flatMap((s) =>
+            s.envKeys.map((k) => `${s.name}: ${k}`),
+          );
+          const openWorld = scan.servers.flatMap((s) =>
+            s.tools.filter((t) => t.annotations?.openWorldHint === true).map((t) => `${s.name}.${t.name}`),
+          );
+
+          const text =
+            `# Blast radius\n\n` +
+            `## Credentials held by servers\n` +
+            (secrets.length ? secrets.map((s) => `- ${s}`).join("\n") : "- none declared") +
+            `\n\n## Tools that reach the network\n` +
+            (openWorld.length ? openWorld.map((s) => `- ${s}`).join("\n") : "- none") +
+            `\n\n## Paths from local data to an external destination\n` +
+            (chains.length
+              ? chains.map((c) => `- ${c.evidence ?? c.title}`).join("\n")
+              : "- none found") +
+            `\n\n## Context overhead\n- ${cost.totalTokens} estimated tokens per request\n`;
+          return { content: [{ type: "text", text }] };
+        }
+
+        case "check_drift": {
+          const { dir, scan } = await collect(directory, true);
+          const lockPath = join(dir, LOCKFILE_NAME);
+
+          if (args.update === true) {
+            writeLockfile(lockPath, buildLockfile(scan));
+            return {
+              content: [{ type: "text", text: `Lockfile updated: ${lockPath}` }],
+            };
+          }
+
+          const previous = readLockfile(lockPath);
+          if (!previous) {
+            return {
+              content: [
+                {
+                  type: "text",
+                  text: `No ${LOCKFILE_NAME} in ${dir}. Call check_drift with update: true to record the current state as approved.`,
+                },
+              ],
+            };
+          }
+
+          const drift = diffAgainstLock(previous, scan);
           return {
             content: [
-              {
-                type: "text",
-                text: `No ${LOCKFILE_NAME} in ${dir}. Call check_drift with update: true to record the current state as approved.`,
-              },
+              { type: "text", text: `# Drift since ${previous.generatedAt}\n\n${formatFindings(drift)}` },
             ],
           };
         }
 
-        const drift = diffAgainstLock(previous, scan);
-        return {
-          content: [
-            { type: "text", text: `# Drift since ${previous.generatedAt}\n\n${formatFindings(drift)}` },
-          ],
-        };
+        default:
+          return {
+            content: [{ type: "text", text: `Unknown tool: ${req.params.name}` }],
+            isError: true,
+          };
       }
-
-      default:
-        return {
-          content: [{ type: "text", text: `Unknown tool: ${req.params.name}` }],
-          isError: true,
-        };
+    } catch (err) {
+      return {
+        content: [
+          { type: "text", text: `mcp-doctor failed: ${err instanceof Error ? err.message : String(err)}` },
+        ],
+        isError: true,
+      };
     }
-  } catch (err) {
-    return {
-      content: [{ type: "text", text: `mcp-doctor failed: ${err instanceof Error ? err.message : String(err)}` }],
-      isError: true,
-    };
-  }
-});
+  });
 
-await server.connect(new StdioServerTransport());
+  return server;
+}
+
+/** Serve over stdio. Returns once the transport closes. */
+export async function startServer(): Promise<void> {
+  await createServer().connect(new StdioServerTransport());
+}

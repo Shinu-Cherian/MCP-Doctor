@@ -1,11 +1,41 @@
 {
-  "name": "mcp-doctor",
+  "name": "@mcp-doctor/cli",
   "version": "0.1.0",
-  "description": "Audits the MCP servers your AI can actually reach.",
+  "description": "Security auditor for MCP servers. Finds tool descriptions carrying hidden instructions, annotations that contradict their own schema, over-shared credentials, and pairs of tools that together form a path off your machine. Runs entirely offline.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "security",
+    "security-scanner",
+    "audit",
+    "ai-agents",
+    "llm",
+    "prompt-injection",
+    "tool-poisoning",
+    "cli"
+  ],
+  "homepage": "https://github.com/Shinu-Cherian/MCP-Doctor#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Shinu-Cherian/MCP-Doctor.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Shinu-Cherian/MCP-Doctor/issues"
+  },
+  "license": "MIT",
+  "author": "Shinu Cherian",
   "type": "module",
   "bin": {
-    "mcp-doctor": "./dist/index.js",
-    "mcp-doctor-server": "./dist/server.js"
+    "mcp-doctor": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.map",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "tsc",
@@ -13,8 +43,9 @@
     "test": "node scripts/run-tests.mjs",
     "dev": "tsx src/index.ts",
     "audit": "tsx src/index.ts audit",
-    "serve": "tsx src/server.ts",
-    "selftest": "tsx src/index.ts audit --spawn fixtures/selftest"
+    "serve": "tsx src/index.ts serve",
+    "selftest": "tsx src/index.ts audit --spawn fixtures/selftest",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",

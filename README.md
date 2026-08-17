@@ -331,9 +331,9 @@ yet enumerate the live set. This is the next thing to build.
 **Only tested on Windows.** Path handling for macOS and Linux is implemented but
 has not been run there.
 
-**No LLM layer.** By design, so far. All thirty rules are deterministic. An
-optional local pass through Ollama to narrate findings is possible later, and
-would remain optional.
+**No model in the analysis path.** All thirty rules are deterministic, which is
+a deliberate choice rather than a missing feature: the same input always
+produces the same findings, and nothing has to be trusted to judge severity.
 
 **No CI.** The test suite exists and passes; nothing runs it automatically yet.
 

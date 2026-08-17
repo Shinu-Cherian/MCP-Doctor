@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "mcp-doctor": {
-      "command": "npx",
-      "args": ["tsx@4.19.2", "src/index.ts", "serve"]
+      "command": "node",
+      "args": ["node_modules/tsx/dist/cli.mjs", "src/index.ts", "serve"]
     }
   }
 }

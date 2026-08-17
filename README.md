@@ -278,11 +278,13 @@ parameters, honest annotations, descriptions that state behaviour rather than
 argue for their own selection.
 
 ```bash
-npm run selftest    # mcp-doctor audits mcp-doctor — nothing above informational
+npm run selftest    # mcp-doctor audits mcp-doctor — reports nothing
 ```
 
-Keeping that clean is part of the test suite's job: if a rule ever fires on
-our own tool definitions, the build should say so.
+Keeping that at nothing is part of the test suite's job: if a rule ever fires
+on our own tool definitions, the build should say so. It runs with --no-live,
+because whether the check passes should depend on our code and not on whatever
+else happens to be running on the machine.
 
 ---
 
@@ -411,7 +413,7 @@ npm install
 npm run typecheck    # src, tests and fixtures
 npm test             # 117 unit tests
 npm run build        # compile to dist/
-npm run selftest     # audit ourselves; nothing above informational
+npm run selftest     # audit ourselves; must report nothing
 ```
 
 The repository is named `MCP-Doctor`; the package is published under the

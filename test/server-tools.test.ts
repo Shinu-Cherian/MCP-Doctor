@@ -10,6 +10,13 @@ import { after, before, describe, it } from "node:test";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 
+/**
+ * Spawning a server, compiling TypeScript on the fly and completing a stdio
+ * handshake is slow on a cold CI runner — Windows especially. Without an
+ * explicit budget a slow start looks like a hang rather than a failure.
+ */
+const SPAWN_TIMEOUT_MS = 120_000;
+
 let client: Client;
 
 /** Pull the text out of a tool result. */
@@ -34,14 +41,14 @@ before(async () => {
       stderr: "ignore",
     }),
   );
-});
+}, { timeout: SPAWN_TIMEOUT_MS });
 
 after(async () => {
   await client.close().catch(() => {});
 });
 
 describe("mcp-doctor as an MCP server", () => {
-  it("advertises exactly the three documented tools", async () => {
+  it("advertises exactly the three documented tools", { timeout: SPAWN_TIMEOUT_MS }, async () => {
     const { tools } = await client.listTools();
     assert.deepEqual(
       tools.map((t) => t.name).sort(),
@@ -49,7 +56,7 @@ describe("mcp-doctor as an MCP server", () => {
     );
   });
 
-  it("runs audit_mcp_servers against a directory", async () => {
+  it("runs audit_mcp_servers against a directory", { timeout: SPAWN_TIMEOUT_MS }, async () => {
     const result = await client.callTool({
       name: "audit_mcp_servers",
       arguments: { directory: "fixtures/vulnerable-project" },
@@ -63,7 +70,7 @@ describe("mcp-doctor as an MCP server", () => {
     assert.match(text, /live: true/);
   });
 
-  it("reports findings when asked to connect", async () => {
+  it("reports findings when asked to connect", { timeout: SPAWN_TIMEOUT_MS }, async () => {
     const result = await client.callTool({
       name: "audit_mcp_servers",
       arguments: { directory: "fixtures/vulnerable-project", live: true },
@@ -74,7 +81,7 @@ describe("mcp-doctor as an MCP server", () => {
     assert.match(text, /tool-poisoning|annotation-lie/, "should surface real findings");
   });
 
-  it("runs explain_blast_radius", async () => {
+  it("runs explain_blast_radius", { timeout: SPAWN_TIMEOUT_MS }, async () => {
     const result = await client.callTool({
       name: "explain_blast_radius",
       arguments: { directory: "fixtures/vulnerable-project" },
@@ -87,7 +94,7 @@ describe("mcp-doctor as an MCP server", () => {
     assert.match(text, /Tools that reach the network/);
   });
 
-  it("reports a missing lockfile rather than failing", async () => {
+  it("reports a missing lockfile rather than failing", { timeout: SPAWN_TIMEOUT_MS }, async () => {
     const result = await client.callTool({
       name: "check_drift",
       arguments: { directory: "fixtures/vulnerable-project" },
@@ -97,7 +104,7 @@ describe("mcp-doctor as an MCP server", () => {
     assert.match(textOf(result), /No mcp-doctor\.lock\.json|Drift since/);
   });
 
-  it("returns an error for an unknown tool rather than crashing", async () => {
+  it("returns an error for an unknown tool rather than crashing", { timeout: SPAWN_TIMEOUT_MS }, async () => {
     const result = await client.callTool({ name: "no_such_tool", arguments: {} });
     assert.ok(isError(result));
     assert.match(textOf(result), /Unknown tool/);

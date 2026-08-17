@@ -14,6 +14,9 @@ import { declared } from "./factories.js";
 
 const TSX = "node_modules/tsx/dist/cli.mjs";
 
+/** Cold CI runners, Windows in particular, are slow to spawn and handshake. */
+const SPAWN_TIMEOUT_MS = 120_000;
+
 /** Same server, once paginated and once not. */
 function fixture(mode: "gitops" | "paged") {
   return declared({
@@ -24,8 +27,8 @@ function fixture(mode: "gitops" | "paged") {
 }
 
 describe("paginated listings", () => {
-  it("reads every page of a paginated tools/list", async () => {
-    const paged = await scanServer(fixture("paged"), { allowSpawn: true, timeoutMs: 60_000 });
+  it("reads every page of a paginated tools/list", { timeout: SPAWN_TIMEOUT_MS }, async () => {
+    const paged = await scanServer(fixture("paged"), { allowSpawn: true, timeoutMs: 90_000 });
     assert.equal(paged.status, "ok", paged.note);
     assert.equal(
       paged.tools.length,
@@ -34,10 +37,10 @@ describe("paginated listings", () => {
     );
   });
 
-  it("agrees with the same server listing in one page", async () => {
+  it("agrees with the same server listing in one page", { timeout: SPAWN_TIMEOUT_MS }, async () => {
     const [paged, whole] = await Promise.all([
-      scanServer(fixture("paged"), { allowSpawn: true, timeoutMs: 60_000 }),
-      scanServer(fixture("gitops"), { allowSpawn: true, timeoutMs: 60_000 }),
+      scanServer(fixture("paged"), { allowSpawn: true, timeoutMs: 90_000 }),
+      scanServer(fixture("gitops"), { allowSpawn: true, timeoutMs: 90_000 }),
     ]);
 
     assert.equal(whole.status, "ok", whole.note);

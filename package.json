@@ -45,7 +45,7 @@
     "dev": "tsx src/index.ts",
     "audit": "tsx src/index.ts audit",
     "serve": "tsx src/index.ts serve",
-    "selftest": "tsx src/index.ts audit --spawn --no-live fixtures/selftest",
+    "selftest": "tsx src/index.ts audit --spawn --no-live --no-logs fixtures/selftest",
     "prepublishOnly": "npm run typecheck && npm test && npm run build"
   },
   "dependencies": {

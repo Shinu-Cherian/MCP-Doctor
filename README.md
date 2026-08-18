@@ -87,6 +87,7 @@ VS Code and Windsurf**, plus any project directory you pass as an argument.
 | `--network` | Contact remote HTTP servers. |
 | `--forward-env` | Pass your real environment to spawned servers. Off by default. |
 | `--no-live` | Skip the process-table check. |
+| `--no-logs` | Skip reading client logs. |
 | `--lock` | Write `mcp-doctor.lock.json`, recording the current state as approved. |
 | `--json` | Machine-readable output. |
 | `--markdown FILE` | Write a shareable report. |
@@ -98,7 +99,7 @@ so it works in CI without a wrapper script.
 
 ## What it checks
 
-Thirty-four rules across six areas. All of them are deterministic: given the
+Thirty-five rules across seven areas. All of them are deterministic: given the
 same input they produce the same output, with no model involved.
 
 ### Configuration
@@ -176,6 +177,31 @@ one source that works the same for Claude, Cursor, VS Code and Windsurf.
 
 Reading the process table executes nothing and contacts nobody, so it runs by
 default. Disable with `--no-live`.
+
+### Recorded by the client
+
+A server installed as an extension runs inside the client's own process. It
+never appears in `mcpServers`, and it never becomes a child process to
+enumerate — so both of the checks above miss it entirely. On the machine this
+was developed on, that describes the only MCP server actually installed.
+
+What it does leave behind is a log. Clients that keep one write the handshake
+to disk, which is enough to prove the server exists and to recover its
+identity, without starting anything.
+
+| Rule | Catches |
+| --- | --- |
+| `undeclared-in-logs` | A server the client has run that no config file declares |
+
+Claude Desktop only, for now: Cursor and VS Code route MCP logs to an editor
+output panel rather than a file, and Windsurf documents no location. Note also
+that Claude Desktop replaces the middle of long payloads with a marker like
+`[29928 chars truncated]`, so a tool listing recovered this way is usually
+incomplete. Where that happens the server is reported as **not inspected**
+rather than scanned — running the rules over a fraction of a tool list would
+come back clean for the tools that were never read.
+
+Disable with `--no-logs`.
 
 ### Over time
 
@@ -358,7 +384,7 @@ require OAuth, and `mcp-doctor` has no way to authenticate. Against those,
 analysed — transport, secrets, supply chain — so the config rules apply either
 way.
 
-**No model in the analysis path.** All thirty-four rules are deterministic, which is
+**No model in the analysis path.** All thirty-five rules are deterministic, which is
 a deliberate choice rather than a missing feature: the same input always
 produces the same findings, and nothing has to be trusted to judge severity.
 
@@ -372,6 +398,7 @@ src/
   discover.ts         find and normalise config files across five clients
   scan.ts             MCP client: handshake, list tools/resources/prompts
   live.ts             read the OS process table, cross-platform
+  logs.ts             recover servers from client logs, nothing executed
   rules/
     markers.ts          shared lexicons for injection and promotional prose
     config.ts           secrets, supply chain, transport
@@ -387,7 +414,7 @@ src/
   server.ts           mcp-doctor as an MCP server
   version.ts          single source for the version announced in handshakes
 
-test/                 117 unit tests, one file per rule module
+test/                 131 unit tests, one file per rule module
 fixtures/
   vulnerable-server/    deliberately unsafe server, used as a scan target
   vulnerable-project/   config pointing at it
@@ -411,7 +438,7 @@ cd MCP-Doctor
 npm install
 
 npm run typecheck    # src, tests and fixtures
-npm test             # 117 unit tests
+npm test             # 131 unit tests
 npm run build        # compile to dist/
 npm run selftest     # audit ourselves; must report nothing
 ```

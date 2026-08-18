@@ -92,8 +92,10 @@ export function renderTerminal(
    */
   const notInspected = result.servers.filter((s) => s.status === "skipped");
   if (notInspected.length > 0) {
-    const needSpawn = notInspected.filter((s) => s.declared.transport === "stdio").length;
-    const flag = needSpawn > 0 ? "--spawn" : "--network";
+    // A server recovered from a log has no transport recorded, so falling back
+    // to --network for it would send the reader down the wrong path.
+    const needsNetwork = notInspected.every((s) => s.declared.transport === "http");
+    const flag = needsNetwork ? "--network" : "--spawn";
     out.push(
       `  ${YELLOW}${notInspected.length} server(s) not inspected${RESET} ` +
         `${DIM}— their tools were not read. Re-run with ${flag} to include them.${RESET}`,
@@ -165,9 +167,9 @@ export function renderMarkdown(
 
   const notInspected = result.servers.filter((s) => s.status === "skipped");
   if (notInspected.length > 0) {
-    const flag = notInspected.some((s) => s.declared.transport === "stdio")
-      ? "--spawn"
-      : "--network";
+    const flag = notInspected.every((s) => s.declared.transport === "http")
+      ? "--network"
+      : "--spawn";
     out.push(
       `> **${notInspected.length} server(s) were not inspected.** Their tools were not ` +
         `read, so tool-level findings are missing for them. Re-run with \`${flag}\` ` +

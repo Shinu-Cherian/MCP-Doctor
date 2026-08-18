@@ -19,6 +19,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { findLiveServers } from "./live.js";
+import { readClientLogs } from "./logs.js";
 import { IMPLEMENTATION } from "./version.js";
 import {
   CreateMessageRequestSchema,
@@ -31,6 +32,8 @@ import type {
   ResourceDef,
   ScanResult,
   ServerCapabilities,
+  LoggedServer,
+  LogSummary,
   ResourceTemplateDef,
   ServerScan,
   ToolDef,
@@ -38,6 +41,8 @@ import type {
 } from "./types.js";
 
 export interface ScanOptions {
+  /** Read client logs for servers config never mentions. Read-only; on by default. */
+  readLogs?: boolean;
   /** Compare the process table against the config. Read-only; on by default. */
   checkLive?: boolean;
   /** Run local stdio servers. Off by default — see rule 1 above. */
@@ -51,6 +56,7 @@ export interface ScanOptions {
 }
 
 const DEFAULTS: Required<ScanOptions> = {
+  readLogs: true,
   checkLive: true,
   allowSpawn: false,
   allowNetwork: false,
@@ -341,6 +347,56 @@ export async function scanServer(
   }
 }
 
+/**
+ * Present a server recovered from a log as an ordinary scan result.
+ *
+ * Nothing was executed to produce this, so the transport is recorded as
+ * unknown and the note says where it came from.
+ *
+ * When the client truncated the listing, the server is marked skipped rather
+ * than scanned. Reporting a partial tool list as a complete one would run the
+ * rules over a fraction of the surface and come back clean — a confident wrong
+ * answer about the tools that were never read.
+ */
+function fromLog(logged: LoggedServer): ServerScan {
+  const declared: DeclaredServer = {
+    name: logged.name,
+    transport: "unknown",
+    envKeys: [],
+    source: { client: logged.client, path: logged.logPath, serverCount: 1 },
+  };
+
+  const base = {
+    name: logged.name,
+    declared,
+    serverInfo: logged.serverInfo,
+    resources: [],
+    resourceTemplates: [],
+    prompts: logged.prompts,
+    unsolicited: [],
+    discoveredVia: "log" as const,
+  };
+
+  if (!logged.listingComplete) {
+    return {
+      ...base,
+      status: "skipped",
+      note:
+        "found in " +
+        logged.client +
+        " logs, but the client truncated its tool listing — run with --spawn to read it",
+      tools: [],
+    };
+  }
+
+  return {
+    ...base,
+    status: "ok",
+    note: "recovered from " + logged.client + " logs; not executed",
+    tools: logged.tools,
+  };
+}
+
 /** Scan every server found by discovery. */
 export async function scanAll(
   discovery: DiscoveryResult,
@@ -362,5 +418,33 @@ export async function scanAll(
     servers.push(await scanServer(declared, options));
   }
 
-  return { scannedAt: new Date().toISOString(), discovery, servers, live };
+  /*
+   * Fold in anything the client logged but no config declares.
+   *
+   * These arrive as ordinary scan results, so every existing rule — annotation
+   * lies, poisoning, unbounded parameters, cross-server chains — applies to
+   * them without a line of special handling. The tools came from a recorded
+   * handshake rather than a live one, which means we get them without starting
+   * anything at all.
+   */
+  let logs: LogSummary | undefined;
+  if (opts.readLogs) {
+    const read = readClientLogs();
+    const declaredNames = new Set(discovery.servers.map((s) => s.name.toLowerCase()));
+    const undeclared: string[] = [];
+
+    for (const logged of read.servers) {
+      if (declaredNames.has(logged.name.toLowerCase())) continue;
+      undeclared.push(logged.name);
+      servers.push(fromLog(logged));
+    }
+
+    logs = {
+      checkedDirs: read.checkedDirs,
+      supportedClients: read.supportedClients,
+      undeclared,
+    };
+  }
+
+  return { scannedAt: new Date().toISOString(), discovery, servers, live, logs };
 }

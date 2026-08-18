@@ -173,6 +173,13 @@ export interface ServerScan {
 
   /** Milliseconds for handshake + listing, useful as a crude health signal. */
   durationMs?: number;
+
+  /**
+   * Where this surface came from. "log" means it was reconstructed from a
+   * client log rather than obtained by connecting, so it describes the last
+   * recorded session rather than this moment.
+   */
+  discoveredVia?: "config" | "log";
 }
 
 export interface ScanResult {
@@ -181,6 +188,16 @@ export interface ScanResult {
   servers: ServerScan[];
   /** What was actually running, when the check was performed. */
   live?: LiveResult;
+  /** What the client logs revealed, including servers config never mentions. */
+  logs?: LogSummary;
+}
+
+/** Which log directories were read, and what they yielded. */
+export interface LogSummary {
+  checkedDirs: string[];
+  supportedClients: ClientKind[];
+  /** Names of servers found only in logs — nothing in config declares them. */
+  undeclared: string[];
 }
 
 /* ------------------------------------------------------------------ *
@@ -220,6 +237,41 @@ export interface LiveResult {
   servers: LiveServer[];
   /** Why enumeration failed or was partial. */
   note?: string;
+}
+
+/* ------------------------------------------------------------------ *
+ * Client logs: servers the client has run, recorded on disk.
+ * ------------------------------------------------------------------ */
+
+/**
+ * A server recovered from a client log rather than from config.
+ *
+ * The handshake is written out in full, so this carries the same tool
+ * definitions a live scan would return — obtained without starting anything.
+ */
+export interface LoggedServer {
+  /** Name the client used, taken from the log filename. */
+  name: string;
+  client: ClientKind;
+  logPath: string;
+  serverInfo?: { name: string; version: string };
+  tools: ToolDef[];
+  prompts: PromptDef[];
+  /** When the log was last written, as a rough "last used". */
+  lastSeen?: string;
+
+  /**
+   * False when the client's logger cut the payload short.
+   *
+   * Claude Desktop replaces the middle of a long message with a marker like
+   * "[29928 chars truncated]", which leaves the JSON unparseable. The server
+   * is still proof of an installation, but its tool list is not trustworthy —
+   * and running rules over a partial list would report "no findings" for tools
+   * that were never read, which is worse than admitting the gap.
+   */
+  listingComplete: boolean;
+  /** Tool names recovered before the cut, for information only. */
+  partialToolNames: string[];
 }
 
 /* ------------------------------------------------------------------ *

@@ -384,7 +384,9 @@ function fromLog(logged: LoggedServer): ServerScan {
       note:
         "found in " +
         logged.client +
-        " logs, but the client truncated its tool listing — run with --spawn to read it",
+        " logs, but the client truncated its tool listing. There is no command to " +
+        "start it from either, so its tools cannot be read from here — inspect it in " +
+        "the client's own extensions list",
       tools: [],
     };
   }

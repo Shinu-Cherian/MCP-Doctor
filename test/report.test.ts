@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { computeCost } from "../src/cost.js";
 import { renderMarkdown, renderTerminal } from "../src/report.js";
-import { scan, scanResult, tool } from "./factories.js";
+import { declared, scan, scanResult, tool } from "./factories.js";
 
 /** Strip ANSI colour so assertions read the text rather than the escape codes. */
 function plain(text: string): string {
@@ -33,6 +33,41 @@ describe("report", () => {
     assert.ok(notice !== -1, "the summary must admit the report is partial");
     assert.ok(footer === -1 || notice < footer, "the notice belongs near the top");
     assert.match(text, /--spawn/);
+  });
+
+
+  /*
+   * A server recovered from a log has no command to start and no URL to call,
+   * so no flag can reach it. Suggesting one sends the reader off to run
+   * something that changes nothing — worse than saying so plainly.
+   */
+  it("does not offer a flag for a server no flag can reach", () => {
+    const fromLog = scanResult([
+      scan({
+        name: "ext",
+        status: "skipped",
+        note: "found in claude-desktop logs",
+        declared: declared({ name: "ext", transport: "unknown", command: undefined }),
+      }),
+    ]);
+
+    const text = plain(renderTerminal(fromLog, [], computeCost(fromLog)));
+    assert.match(text, /1 server\(s\) not inspected/);
+    assert.match(text, /cannot be read from here/);
+    assert.ok(!/re-run with --spawn/.test(text), "no flag would help this server");
+  });
+
+  it("still offers --spawn when a stdio server was skipped", () => {
+    const stdio = scanResult([
+      scan({
+        name: "local",
+        status: "skipped",
+        declared: declared({ name: "local", transport: "stdio", command: "node" }),
+      }),
+    ]);
+
+    const text = plain(renderTerminal(stdio, [], computeCost(stdio)));
+    assert.match(text, /re-run with --spawn/);
   });
 
   it("stays quiet when everything was inspected", () => {

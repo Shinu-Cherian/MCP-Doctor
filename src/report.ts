@@ -89,16 +89,30 @@ export function renderTerminal(
    * ones. The servers left out are already listed at the bottom, but the
    * summary is where people look, and a confident partial answer is the exact
    * failure this tool exists to point at.
+   *
+   * Only suggest a flag to the servers a flag can actually reach. A server
+   * recovered from a log has no command to start, so telling its owner to
+   * re-run with --spawn sends them to do something that changes nothing.
    */
   const notInspected = result.servers.filter((s) => s.status === "skipped");
   if (notInspected.length > 0) {
-    // A server recovered from a log has no transport recorded, so falling back
-    // to --network for it would send the reader down the wrong path.
-    const needsNetwork = notInspected.every((s) => s.declared.transport === "http");
-    const flag = needsNetwork ? "--network" : "--spawn";
+    const reachable = notInspected.filter((s) => s.declared.transport !== "unknown");
+    const unreachable = notInspected.length - reachable.length;
+
+    const parts: string[] = [];
+    if (reachable.length > 0) {
+      const flag = reachable.every((s) => s.declared.transport === "http")
+        ? "--network"
+        : "--spawn";
+      parts.push(`re-run with ${flag} to include ${reachable.length === notInspected.length ? "them" : "those"}`);
+    }
+    if (unreachable > 0) {
+      parts.push(`${unreachable} cannot be read from here — see below`);
+    }
+
     out.push(
       `  ${YELLOW}${notInspected.length} server(s) not inspected${RESET} ` +
-        `${DIM}— their tools were not read. Re-run with ${flag} to include them.${RESET}`,
+        `${DIM}— their tools were not read; ${parts.join("; ")}.${RESET}`,
     );
   }
 

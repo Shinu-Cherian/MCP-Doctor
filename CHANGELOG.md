@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.3.1
+
+**Stops suggesting a flag that cannot help.**
+
+0.3.0 reported a log-discovered server and told the reader to re-run with
+`--spawn` to read its tools. Running it changes nothing: a server recovered
+from a log has no command to start and no URL to call, so there is nothing for
+`--spawn` to reach.
+
+Bad advice is worse than none here. Someone follows it, sees identical output,
+and concludes the tool is broken — when the tool was right and only the
+suggestion was wrong.
+
+The summary now offers a flag only to servers a flag can reach and counts the
+rest separately. For those, the footer says what is actually true: the client
+truncated the listing, there is no command to start it from, and the place to
+look is the client's own extensions list.
+
 ## 0.3.0
 
 **Finds servers the client has run, even when nothing declares them.**

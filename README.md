@@ -414,7 +414,7 @@ src/
   server.ts           mcp-doctor as an MCP server
   version.ts          single source for the version announced in handshakes
 
-test/                 131 unit tests, one file per rule module
+test/                 133 unit tests, one file per rule module
 fixtures/
   vulnerable-server/    deliberately unsafe server, used as a scan target
   vulnerable-project/   config pointing at it
@@ -438,7 +438,7 @@ cd MCP-Doctor
 npm install
 
 npm run typecheck    # src, tests and fixtures
-npm test             # 131 unit tests
+npm test             # 133 unit tests
 npm run build        # compile to dist/
 npm run selftest     # audit ourselves; must report nothing
 ```

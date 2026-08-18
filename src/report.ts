@@ -9,6 +9,7 @@ import type { Finding, ScanResult, Severity } from "./types.js";
 const RESET = "\x1b[0m";
 const BOLD = "\x1b[1m";
 const DIM = "\x1b[2m";
+const YELLOW = "\x1b[33m";
 
 const SEVERITY_COLOUR: Record<Severity, string> = {
   critical: "\x1b[41m\x1b[97m", // white on red
@@ -79,6 +80,26 @@ export function renderTerminal(
     .filter((s) => counts[s])
     .map((s) => `${SEVERITY_COLOUR[s]}${SEVERITY_LABEL[s].trim()} ${counts[s]}${RESET}`);
   if (badges.length > 0) out.push(`  ${badges.join("  ")}`);
+
+  /*
+   * Say plainly, at the top, when this report covers only part of the picture.
+   *
+   * Reading a server's tools means executing it, so that is opt-in — which
+   * means the default run finds configuration problems and none of the tool
+   * ones. The servers left out are already listed at the bottom, but the
+   * summary is where people look, and a confident partial answer is the exact
+   * failure this tool exists to point at.
+   */
+  const notInspected = result.servers.filter((s) => s.status === "skipped");
+  if (notInspected.length > 0) {
+    const needSpawn = notInspected.filter((s) => s.declared.transport === "stdio").length;
+    const flag = needSpawn > 0 ? "--spawn" : "--network";
+    out.push(
+      `  ${YELLOW}${notInspected.length} server(s) not inspected${RESET} ` +
+        `${DIM}— their tools were not read. Re-run with ${flag} to include them.${RESET}`,
+    );
+  }
+
   out.push("");
 
   /* Findings --------------------------------------------------------- */
@@ -141,6 +162,19 @@ export function renderMarkdown(
   out.push("| --- | --- |");
   for (const s of order) if (counts[s]) out.push(`| ${s} | ${counts[s]} |`);
   out.push("");
+
+  const notInspected = result.servers.filter((s) => s.status === "skipped");
+  if (notInspected.length > 0) {
+    const flag = notInspected.some((s) => s.declared.transport === "stdio")
+      ? "--spawn"
+      : "--network";
+    out.push(
+      `> **${notInspected.length} server(s) were not inspected.** Their tools were not ` +
+        `read, so tool-level findings are missing for them. Re-run with \`${flag}\` ` +
+        "to include them.",
+    );
+    out.push("");
+  }
 
   out.push("## Findings");
   out.push("");

@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.3.0
+
+**Finds servers the client has run, even when nothing declares them.**
+
+Running the published command on a normal desktop reported "0 declared, 0
+findings". That was true of the config files and wrong about the machine: an
+MCP server was installed and had been used.
+
+A server installed as an extension runs inside the client's own process. It is
+in no `mcpServers` block, and it never becomes a child process to enumerate, so
+both existing checks miss it by construction. The only trace is the log the
+client kept while talking to it, which carries the handshake — enough to prove
+the server exists and to recover its identity, without starting anything.
+
+New rule: `undeclared-in-logs` — a server the client has run that no config
+file declares. New flag: `--no-logs` opts out.
+
+Two things the real logs decided:
+
+Claude Desktop replaces the middle of long payloads with a marker such as
+`[29928 chars truncated]`, which leaves the JSON unparseable. Every tool
+listing in the sample was cut that way, so a listing recovered from a log is
+usually partial — and a partial listing is reported as **not inspected** rather
+than scanned. Running the rules over a fraction of a tool list would come back
+clean for the tools that were never read.
+
+Identity survives the cut, because it sits at the front of the payload, which
+is enough for the finding that matters.
+
+Claude Desktop only for now. Cursor and VS Code route MCP logs to an editor
+output panel rather than a file, and Windsurf documents no location, so there
+is nothing to read for those; the report names the clients it covered.
+
+Thirty-five rules, 131 tests.
+
 ## 0.2.1
 
 **Says at the top when a report covers only part of the picture.**

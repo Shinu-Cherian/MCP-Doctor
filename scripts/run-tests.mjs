@@ -39,9 +39,20 @@ const require = createRequire(import.meta.url);
 const tsxPackage = require.resolve("tsx/package.json");
 const tsxCli = resolve(dirname(tsxPackage), require("tsx/package.json").bin);
 
-const result = spawnSync(process.execPath, [tsxCli, "--test", ...files], {
-  stdio: "inherit",
-});
+/*
+ * One file at a time.
+ *
+ * Node runs test files in parallel by default, sized to the machine. Two of
+ * these files spawn real MCP servers over stdio, and a CI runner has a couple
+ * of cores against this laptop's eighteen — enough contention that the
+ * handshakes missed their budget on Windows while every other platform passed.
+ * The suite is small; determinism is worth more than the seconds.
+ */
+const result = spawnSync(
+  process.execPath,
+  [tsxCli, "--test", "--test-concurrency=1", ...files],
+  { stdio: "inherit" },
+);
 
 if (result.error) {
   console.error(`Could not run ${tsxCli}: ${result.error.message}`);

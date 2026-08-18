@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.2.1
+
+**Says at the top when a report covers only part of the picture.**
+
+A default run reads configuration and stops there, because reading a server's
+tools means executing it and that stays opt-in. On the bundled fixtures that is
+the difference between 5 findings and 23 — and every critical one sits in the
+missing eighteen.
+
+The skipped servers were already listed, but at the bottom, in dim text, after
+every finding. The summary said "5 findings" with nothing to suggest anything
+had been left out, which reads as a clean bill of health. That is the same
+failure this tool exists to point at: a confident partial answer.
+
+Both the terminal and markdown reports now state how many servers were not
+inspected, and which flag would include them, beside the counts rather than
+beneath them.
+
 ## 0.2.0
 
 **Compares what is running against what the config files declare.**
